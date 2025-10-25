@@ -119,8 +119,77 @@ class TimeScale extends IntervalScale<TimeScaleSetting> {
 
     private _minLevelUnit: TimeUnit;
 
+    private _tickData?: number[];
+
+    private _useExactTicks?: boolean;
+
     constructor(settings?: TimeScaleSetting) {
         super(settings);
+    }
+
+    /**
+     * Set exact tick data for use when useExactTicks mode is enabled.
+     * Called by AxisModel during scale initialization when axis.useExactTicks is true.
+     *
+     * @param data Array of timestamps (in milliseconds) to use as tick positions
+     * @param useExactTicks Whether to enable exact tick mode
+     */
+    setTickData(data: number[], useExactTicks: boolean): void {
+        this._tickData = data && data.length ? data.slice().sort((a, b) => a - b) : undefined;
+        this._useExactTicks = useExactTicks;
+    }
+
+    /**
+     * @override
+     */
+    setExtent(start: number, end: number): void {
+        super.setExtent(start, end);
+        if (this._useExactTicks && (!this._tickData || !this._tickData.length)) {
+            warn('useExactTicks is enabled but no tick data provided via setTickData()');
+        }
+    }
+
+    /**
+     * Generate ticks from provided tick data array, filtering by current extent.
+     * Preserves TimeScaleTick format and supports axis breaks.
+     *
+     * @param tickData Sorted array of timestamp values
+     * @param opt Scale options including break handling
+     * @returns Array of TimeScaleTick objects
+     */
+    private _generateExactTicks(tickData: number[], opt: ScaleGetTicksOpt): TimeScaleTick[] {
+        const ticks: TimeScaleTick[] = [];
+        const useUTC = this.getSetting('useUTC');
+        const extent = this._extent;
+
+        for (let i = 0; i < tickData.length; i++) {
+            const tickValue = tickData[i];
+            if (tickValue >= extent[0] && tickValue <= extent[1]) {
+                const unit = getUnitFromValue(tickValue, useUTC);
+                ticks.push({
+                    value: tickValue,
+                    time: {
+                        level: 0,
+                        upperTimeUnit: unit,
+                        lowerTimeUnit: unit,
+                    }
+                });
+            }
+        }
+
+        const scaleBreakHelper = getScaleBreakHelper();
+        if (scaleBreakHelper && opt.breakTicks !== 'none') {
+            getScaleBreakHelper().addBreaksToTicks(ticks, this._brkCtx!.breaks, this._extent, trimmedBrk => {
+                const unit = getUnitFromValue(trimmedBrk.vmin, useUTC);
+                return {
+                    level: 0,
+                    lowerTimeUnit: unit,
+                    upperTimeUnit: unit,
+                };
+            });
+        }
+
+        return ticks;
     }
 
     /**
@@ -153,6 +222,10 @@ class TimeScale extends IntervalScale<TimeScaleSetting> {
      */
     getTicks(opt?: ScaleGetTicksOpt): TimeScaleTick[] {
         opt = opt || {};
+
+        if (this._useExactTicks && this._tickData && this._tickData.length) {
+            return this._generateExactTicks(this._tickData, opt);
+        }
 
         const interval = this._interval;
         const extent = this._extent;

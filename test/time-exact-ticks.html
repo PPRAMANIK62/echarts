@@ -1,0 +1,246 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <script src="lib/simpleRequire.js"></script>
+        <script src="lib/config.js"></script>
+        <meta
+            name="viewport"
+            content="user-scalable=no,width=device-width,height=device-height"
+        />
+    </head>
+    <body>
+        <style>
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                font-family: Arial, sans-serif;
+            }
+            .container {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                padding: 20px;
+                box-sizing: border-box;
+            }
+            .chart {
+                width: 100%;
+                height: 300px;
+                margin-bottom: 20px;
+            }
+            h2 {
+                margin: 0 0 10px 0;
+                font-size: 16px;
+            }
+        </style>
+        <div class="container">
+            <div>
+                <h2>
+                    Time Axis with useExactTicks: true (15-minute intervals)
+                </h2>
+                <div id="chart1" class="chart"></div>
+            </div>
+            <div>
+                <h2>
+                    Time Axis with useExactTicks: false (default automatic
+                    ticks)
+                </h2>
+                <div id="chart2" class="chart"></div>
+            </div>
+            <div>
+                <h2>Time Axis with useExactTicks: true + DataZoom</h2>
+                <div id="chart3" class="chart"></div>
+            </div>
+        </div>
+        <script>
+            require(["echarts"], function (echarts) {
+                const baseTime = new Date("2024-01-01 08:00:00").getTime();
+                const fifteenMinutes = 15 * 60 * 1000;
+
+                const exactTimes = [];
+                for (let i = 0; i <= 12; i++) {
+                    exactTimes.push(baseTime + i * fifteenMinutes);
+                }
+
+                const data = exactTimes.map((time, i) => [
+                    time,
+                    Math.sin(i / 2) * 20 + 50 + Math.random() * 10,
+                ]);
+
+                const chart1 = echarts.init(document.getElementById("chart1"));
+                chart1.setOption({
+                    title: {
+                        text: "With Exact Ticks",
+                        textStyle: { fontSize: 14 },
+                    },
+                    tooltip: {
+                        trigger: "axis",
+                        formatter: function (params) {
+                            const date = new Date(params[0].value[0]);
+                            return (
+                                date.toLocaleString() +
+                                "<br/>" +
+                                params[0].seriesName +
+                                ": " +
+                                params[0].value[1].toFixed(2)
+                            );
+                        },
+                    },
+                    xAxis: {
+                        type: "time",
+                        useExactTicks: true,
+                        data: exactTimes,
+                        axisLabel: {
+                            formatter: function (value) {
+                                const date = new Date(value);
+                                return (
+                                    date.getHours() +
+                                    ":" +
+                                    String(date.getMinutes()).padStart(2, "0")
+                                );
+                            },
+                        },
+                    },
+                    yAxis: {
+                        type: "value",
+                    },
+                    series: [
+                        {
+                            name: "Value",
+                            type: "line",
+                            data: data,
+                            smooth: true,
+                        },
+                    ],
+                });
+
+                const chart2 = echarts.init(document.getElementById("chart2"));
+                chart2.setOption({
+                    title: {
+                        text: "Without Exact Ticks (Automatic)",
+                        textStyle: { fontSize: 14 },
+                    },
+                    tooltip: {
+                        trigger: "axis",
+                        formatter: function (params) {
+                            const date = new Date(params[0].value[0]);
+                            return (
+                                date.toLocaleString() +
+                                "<br/>" +
+                                params[0].seriesName +
+                                ": " +
+                                params[0].value[1].toFixed(2)
+                            );
+                        },
+                    },
+                    xAxis: {
+                        type: "time",
+                        useExactTicks: false,
+                        axisLabel: {
+                            formatter: function (value) {
+                                const date = new Date(value);
+                                return (
+                                    date.getHours() +
+                                    ":" +
+                                    String(date.getMinutes()).padStart(2, "0")
+                                );
+                            },
+                        },
+                    },
+                    yAxis: {
+                        type: "value",
+                    },
+                    series: [
+                        {
+                            name: "Value",
+                            type: "line",
+                            data: data,
+                            smooth: true,
+                        },
+                    ],
+                });
+
+                const chart3 = echarts.init(document.getElementById("chart3"));
+                chart3.setOption({
+                    title: {
+                        text: "With Exact Ticks + DataZoom",
+                        textStyle: { fontSize: 14 },
+                    },
+                    tooltip: {
+                        trigger: "axis",
+                        formatter: function (params) {
+                            const date = new Date(params[0].value[0]);
+                            return (
+                                date.toLocaleString() +
+                                "<br/>" +
+                                params[0].seriesName +
+                                ": " +
+                                params[0].value[1].toFixed(2)
+                            );
+                        },
+                    },
+                    dataZoom: [
+                        {
+                            type: "slider",
+                            xAxisIndex: 0,
+                            start: 20,
+                            end: 80,
+                        },
+                    ],
+                    xAxis: {
+                        type: "time",
+                        useExactTicks: true,
+                        data: exactTimes,
+                        axisLabel: {
+                            formatter: function (value) {
+                                const date = new Date(value);
+                                return (
+                                    date.getHours() +
+                                    ":" +
+                                    String(date.getMinutes()).padStart(2, "0")
+                                );
+                            },
+                        },
+                    },
+                    yAxis: {
+                        type: "value",
+                    },
+                    series: [
+                        {
+                            name: "Value",
+                            type: "line",
+                            data: data,
+                            smooth: true,
+                        },
+                    ],
+                });
+
+                window.addEventListener("resize", function () {
+                    chart1.resize();
+                    chart2.resize();
+                    chart3.resize();
+                });
+            });
+        </script>
+    </body>
+</html>

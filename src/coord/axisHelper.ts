@@ -41,6 +41,7 @@ import {
     AxisLabelCategoryFormatter,
     AxisLabelValueFormatter,
     AxisLabelFormatterExtraParams,
+    TimeAxisBaseOption
 } from './axisCommonTypes';
 import CartesianAxisModel from './cartesian/AxisModel';
 import SeriesData from '../data/SeriesData';
@@ -48,6 +49,7 @@ import { getStackedDimension } from '../data/helper/dataStackHelper';
 import { Dictionary, DimensionName, ScaleTick } from '../util/types';
 import { ensureScaleRawExtentInfo } from './scaleRawExtentInfo';
 import { parseTimeAxisLabelFormatter } from '../util/time';
+import { parseDate } from '../util/number';
 import { getScaleBreakHelper } from '../scale/break';
 import { error } from '../util/log';
 
@@ -207,10 +209,29 @@ export function createScaleByModel(model: AxisBaseModel, axisType?: string): Sca
                     extent: [Infinity, -Infinity]
                 });
             case 'time':
-                return new TimeScale({
+                const timeScale = new TimeScale({
                     locale: model.ecModel.getLocaleModel(),
                     useUTC: model.ecModel.get('useUTC'),
                 });
+                const timeAxisModel = model as AxisBaseModel<TimeAxisBaseOption>;
+                const useExactTicks = timeAxisModel.option.useExactTicks;
+                if (useExactTicks) {
+                    const axisData = timeAxisModel.option.data;
+                    if (axisData && axisData.length) {
+                        const numericData: number[] = [];
+                        for (let i = 0; i < axisData.length; i++) {
+                            const val = parseDate(axisData[i]);
+                            if (!isNaN(+val)) {
+                                numericData.push(+val);
+                            }
+                        }
+                        timeScale.setTickData(numericData, true);
+                    }
+                    else {
+                        timeScale.setTickData([], true);
+                    }
+                }
+                return timeScale;
             default:
                 // case 'value'/'interval', 'log', or others.
                 return new (Scale.getClass(axisType) || IntervalScale)();

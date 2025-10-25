@@ -209,6 +209,31 @@ export interface LogAxisBaseOption extends NumericAxisBaseOptionCommon {
 export interface TimeAxisBaseOption extends NumericAxisBaseOptionCommon {
     type?: 'time';
     axisLabel?: AxisLabelOption<'time'>;
+    /**
+     * When true, use timestamps from `data` array as exact tick positions instead of
+     * automatic "nice" tick calculation. Useful for custom intervals
+     * operational windows or regulatory periods.
+     *
+     * - Requires `data` array with timestamps
+     * - Ignores `minInterval`, `maxInterval`, and `splitNumber` when enabled
+     * - Falls back to automatic calculation if `data` is empty
+     *
+     * @example
+     * xAxis: {
+     *   type: 'time',
+     *   useExactTicks: true,
+     *   data: ['2024-01-01 08:30:00', '2024-01-01 08:45:00', '2024-01-01 09:00:00']
+     * }
+     *
+     * @default false
+     */
+    useExactTicks?: boolean;
+    /**
+     * Array of timestamps to use as exact tick positions when `useExactTicks` is true.
+     * For time axes, this array is optional and only used when `useExactTicks: true`.
+     * Timestamps can be Date objects, ISO strings, or numeric milliseconds.
+     */
+    data?: ScaleDataValue[];
 }
 interface AxisNameTextStyleOption extends LabelCommonOption {
     rich?: RichTextOption
